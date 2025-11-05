@@ -1,0 +1,76 @@
+% fx_denoise.m
+clear; clc;
+
+origSignal = load('D:\Deep\FFTUNet_Project\本文方法\data\noise_mat_npy_data\part1_4_npy_mat\2007BP_part4_11shot.mat');
+origSignal = origSignal.data;
+cleanSignal = origSignal;
+texture = load('D:\Deep\FFTUNet_Project\本文方法\data\field_data\Sea_0_1_shot.mat');
+noisySignal = texture.data;
+DATA = noisySignal;
+dt = 0.004;      % 采样间隔
+lf = 15;          % 滤波器长度
+mu = 0.01;       % 预白化参数
+flow = 0;        % 最低频率
+fhigh = 60;     % 最高频率
+patch_size1 = [size(DATA,1), size(DATA,2)];
+tic;  % 开始计时
+DATA_f = fx_decon_patch(DATA, dt, lf, mu, flow, fhigh, patch_size1);
+elapsedTime = toc;  % 结束计时
+% 恢复为二维形式
+DATA_f = reshape(DATA_f, patch_size1);
+
+% 可视化前后对比
+% figure;
+% subplot(1,2,1);
+% imagesc(DATA); colormap(gray); title('Original');
+% subplot(1,2,2);
+% imagesc(DATA_f); colormap(gray); title('FX-Decon Denoised');
+
+
+%% 计算信噪比评估去噪效果
+filteredSignal = DATA_f;
+% originalPower = sum(cleanSignal(:).^2);
+% noisePower = sum((noisySignal(:)-cleanSignal(:)).^2);
+% filteredNoisePower = sum((filteredSignal(:)-cleanSignal(:)).^2);
+
+% SNR_original = 10*log10(originalPower/noisePower);
+% SNR_filtered = 10*log10(originalPower/filteredNoisePower);
+% 计算 RMSE（均方根误差）
+% rmse_before = sqrt(noisePower / numel(cleanSignal));
+% rmse_after  = sqrt(filteredNoisePower / numel(cleanSignal));
+
+% % 计算 MSE 用于 PSNR
+% mse_before = mean((noisySignal(:) - cleanSignal(:)).^2);
+% mse_after = mean((filteredSignal(:) - cleanSignal(:)).^2);
+
+% 计算最大信号幅度（峰值）
+% max_signal = max(cleanSignal(:));
+% 
+% % 计算 PSNR
+% PSNR_before = 10 * log10( max_signal^2 / mse_before );
+% PSNR_after = 10 * log10( max_signal^2 / mse_after );
+% 
+% % 计算 SSIM
+% % 注意，ssim 默认用于二维图像，如果你的数据是2D信号矩阵，直接用即可。
+% % 计算 data_range（与 Python 一致）
+% data_range = max(cleanSignal(:)) - min(cleanSignal(:));
+% 
+% % 计算 SSIM（与 Python 等价）
+% SSIM_before = ssim(double(noisySignal), double(cleanSignal), 'DynamicRange', data_range);
+% SSIM_after  = ssim(double(filteredSignal), double(cleanSignal), 'DynamicRange', data_range);
+% 
+% % 打印结果
+% fprintf('FX-Decon 去噪完成，用时 %.2f 秒。\n', elapsedTime);
+% fprintf('SNR before: %.2f dB, RMSE before: %.4f, PSNR before: %.2f dB, SSIM before: %.4f\n', ...
+%     SNR_original, rmse_before, PSNR_before, SSIM_before);
+% fprintf('SNR after : %.2f dB, RMSE after : %.4f, PSNR after : %.2f dB, SSIM after : %.4f\n', ...
+%     SNR_filtered, rmse_after, PSNR_after, SSIM_after);
+% 
+% g = gpuDevice();  % 获取当前 GPU 设备信息
+% allocatedMB = g.TotalMemory - g.AvailableMemory;  % 已分配显存 (MB)
+% reservedMB = g.TotalMemory / 1024^2;              % 总显存 (MB)
+% 
+% fprintf('Allocated memory: %.2f MB\n', allocatedMB / 1024^2);
+% fprintf('Total memory: %.2f MB\n', reservedMB);
+
+save('fx_denoise.mat', 'filteredSignal');
